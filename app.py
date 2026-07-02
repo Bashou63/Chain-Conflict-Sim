@@ -1,25 +1,33 @@
 import streamlit as st
 
-# 1. ユニット選択とスコア（常に上部）
-selected_name = st.selectbox("ユニット選択", ["Unit A", "Unit B"])
-st.subheader("📊 総合スコア: 7066")
+# 1. 変更量の選択（ラジオボタンを横並びに！）
+st.markdown("### 変更量")
+delta_options = [1, 5, 10]
+# ラジオボタンを横並びにするCSSハック
+st.write('<style>div.row-widget.stRadio > div{flex-direction:row;}</style>', unsafe_allow_html=True)
+selected_delta = st.radio("変更量", delta_options, horizontal=True, label_visibility="collapsed")
 
-# 2. 2カラムでステータスを左右に配置（縦幅を半分にする）
 st.markdown("---")
-c1, c2 = st.columns(2)
 
-# 右と左に半分ずつ配置
-with c1:
-    st.write("**HP**")
-    st.write(f"{st.session_state.get('HP', 116)}")
-    # ボタンは縦に並べるが、スペースを極小にする
-    if st.button("-10", key="hp-10"): pass 
-    if st.button("+10", key="hp+10"): pass
+# 2. 各ステータス行の生成ロジック
+def render_row(label, key):
+    cols = st.columns([1, 1, 1, 1])
+    cols[0].write(f"**{label}**")
+    
+    # マイナスボタン
+    if cols[1].button("-", key=f"sub_{key}"):
+        st.session_state[key] -= selected_delta
+        st.rerun()
+    
+    # 現在値
+    cols[2].write(f"**{st.session_state[key]}**")
+    
+    # プラスボタン
+    if cols[3].button("+", key=f"add_{key}"):
+        st.session_state[key] += selected_delta
+        st.rerun()
 
-with c2:
-    st.write("**ATK**")
-    st.write(f"{st.session_state.get('ATK', 100)}")
-    if st.button("-10", key="atk-10"): pass
-    if st.button("+10", key="atk+10"): pass
-
-# ※この構成なら、縦に伸びることなく、情報を画面の左右に詰め込めます！
+# 実際に並べる
+render_row("HP", "HP")
+render_row("ATK", "ATK")
+# ...以下同様
