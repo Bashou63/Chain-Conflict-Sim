@@ -2,13 +2,23 @@ import streamlit as st
 import pandas as pd
 
 # ==========================================
-# 🎮 『Chain Conflict』統合マネジメント ゴーストUI版 (V3.3)
+# 🎮 『Chain Conflict』統合マネジメント 安定王道版 (V3.4)
 # ==========================================
 
 st.set_page_config(
     layout="wide",
     page_title="Chain Conflict シミュレータ"
 )
+
+# 🎨 無理なHTML/CSS固定をすべて排除し、文字色と背景だけを優しくサポート
+st.markdown("""
+    <style>
+    /* アプリ内の基本文字をクッキリ見やすく */
+    .stApp, label, p, span, h1, h2, h3, h4, .stWidgetLabel {
+        color: #FFFFFF !important;
+    }}
+    </style>
+    """, unsafe_allow_html=True)
 
 # データの読み込み
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1-07lIKhhRNmT-TwmgDcVT5tkD4D8_zRCOO2XU9VzIRs/export?format=csv&gid=0"
@@ -24,14 +34,8 @@ def load_data():
 
 df_sheets = load_data()
 
-# 初期値のセット
-total_score, durability_score, offensive_score, sp_gain_per_action = 0, 0, 0, 0
-selected_unit_name = ""
-current_id = "N/A"
-hp, sp_max, atk, def_val, base_wt, allow_weight, move_val = 100, 100, 70, 60, 500, 100, 4
-
 # ------------------------------------------
-# 📑 メイン操作エリア（ここは普通にスクロールします）
+# 📑 1. メイン操作エリア（スマホでも絶対にズレない王道UI）
 # ------------------------------------------
 if not df_sheets.empty:
     id_col = df_sheets.columns[0]
@@ -88,6 +92,17 @@ if not df_sheets.empty:
     speed_mobility_score = wt_score + allow_weight + (move_val * 50)
     total_score = durability_score + offensive_score + speed_mobility_score
 
+    # ------------------------------------------
+    # 🥇 2. 【王道・サイドバー】スコアメーターを格納
+    # ------------------------------------------
+    # 画面左上の「＞」を開くと、このメーターがスマホでも100%綺麗に並びます
+    with st.sidebar:
+        st.header("📊 リアルタイム評価")
+        st.metric("✨ 総合スコア", f"{int(total_score)} 点")
+        st.metric("🛡️ 耐久指数", f"{int(durability_score)} 点")
+        st.metric("⚔️ 攻撃指数", f"{int(offensive_score)} 点")
+        st.metric("🔄 1行動SP回復", f"{sp_gain_per_action:.1f} SP")
+
     # 💾 保存エリア
     st.markdown("---")
     st.header("💾 調整データの出力")
@@ -99,58 +114,5 @@ VALUES ({current_id}, '{selected_unit_name}', {hp}, {sp_max}, {atk}, {def_val}, 
 ON DUPLICATE KEY UPDATE hp={hp}, sp_max={sp_max}, atk={atk}, def={def_val}, base_wt={base_wt}, allow_weight={allow_weight}, move={move_val};"""
     st.code(sql_query, language="sql")
 
-# ------------------------------------------
-# 🎨 【神・監督アイデア】画面の右下にうっすら常時浮遊する、半透明のゴーストUI
-# ------------------------------------------
-# position: fixed を使い、Streamlitのスクロール制限を完全に突破して画面右下に固定します。
-ghost_ui_html = f"""
-<div style="
-    position: fixed;
-    bottom: 80px;
-    right: 15px;
-    width: 140px;
-    background-color: rgba(22, 27, 34, 0.65) !important; /* 透過度65%の渋い黒 */
-    backdrop-filter: blur(4px); /* 背景をうっすらぼかす高級エフェクト */
-    border: 1px solid rgba(240, 246, 252, 0.2);
-    border-radius: 12px;
-    padding: 10px;
-    box-shadow: 0px 8px 24px rgba(0,0,0,0.7);
-    z-index: 999999;
-    pointer-events: none; /* タップを貫通させて下のボタンも押せる親切設計 */
-    font-family: sans-serif;
-">
-    <div style="font-size: 0.7rem; color: rgba(255,255,255,0.6); font-weight: bold; text-align: center; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 3px;">📊 EVALUATION</div>
-    
-    <div style="margin-bottom: 5px;">
-        <div style="font-size: 0.6rem; color: rgba(255,255,255,0.5);">✨ 総合スコア</div>
-        <div style="font-size: 1.2rem; font-weight: bold; color: #00FF66; text-align: right;">{int(total_score)}<span style="font-size:0.7rem; color:white;">点</span></div>
-    </div>
-    
-    <div style="margin-bottom: 5px;">
-        <div style="font-size: 0.6rem; color: rgba(255,255,255,0.5);">🛡️ 耐久指数</div>
-        <div style="font-size: 1.0rem; font-weight: bold; color: #FFFFFF; text-align: right;">{int(durability_score)}</div>
-    </div>
-    
-    <div style="margin-bottom: 5px;">
-        <div style="font-size: 0.6rem; color: rgba(255,255,255,0.5);">⚔️ 攻撃指数</div>
-        <div style="font-size: 1.0rem; font-weight: bold; color: #FFFFFF; text-align: right;">{int(offensive_score)}</div>
-    </div>
-    
-    <div>
-        <div style="font-size: 0.6rem; color: rgba(255,255,255,0.5);">🔄 SP回復</div>
-        <div style="font-size: 1.0rem; font-weight: bold; color: #FFCC00; text-align: right;">{sp_gain_per_action:.1f}<span style="font-size:0.6rem;">SP</span></div>
-    </div>
-</div>
-
-<style>
-/* ダークモード設定（文字が消えないようにアプリ全体の基本文字を白に固定） */
-.stApp, label, p, span, h1, h2, h3, h4, .stWidgetLabel {{
-    color: #FAFAFA !important;
-}}
-/* 入力ボックス内の文字だけは黒で見やすく */
-input, select, div[role="listbox"] {{
-    color: #000000 !important;
-}}
-</style>
-"""
-st.markdown(ghost_ui_html, unsafe_allow_html=True)
+else:
+    st.info("スプレッドシートのデータが空、または読み込み中です。")
