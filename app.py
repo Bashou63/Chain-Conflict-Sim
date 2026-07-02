@@ -1,25 +1,16 @@
 import streamlit as st
 
-# ボタン群を横に並べるための関数（columnsを駆使）
-def render_compact_row(label, key, val):
-    # 1行を [ラベル, 数値, -10, -1, +1, +10] の比率で分割
-    cols = st.columns([2, 1, 1, 1, 1, 1])
-    
-    cols[0].write(f"**{label}**")
-    cols[1].write(f"**{val}**")
-    
-    if cols[2].button("-10", key=f"{key}_m10"): st.session_state[key] -= 10
-    if cols[3].button("-1",  key=f"{key}_m1"):  st.session_state[key] -= 1
-    if cols[4].button("+1",  key=f"{key}_p1"):  st.session_state[key] += 1
-    if cols[5].button("+10", key=f"{key}_p10"): st.session_state[key] += 10
+# ステート初期化
+if 'stats' not in st.session_state:
+    st.session_state.stats = {'HP': 100, 'ATK': 70, 'SP': 100, 'DEF': 60, 'WT': 500, 'MV': 4}
 
-# 総合スコア（一番上に固定）
-st.subheader("📊 総合スコア: 7066")
-st.markdown("---")
-
-# 横並びでの配置（HPから順に）
-# これにより、縦の長さがこれまでの1/4になります！
-render_compact_row("HP", "HP", st.session_state.get("HP", 116))
-render_compact_row("ATK", "ATK", st.session_state.get("ATK", 100))
-render_compact_row("SP", "SP", st.session_state.get("SP", 100))
-# ...以下同様にDEF, WT, 移動と続く
+# HTML/CSSで強制横並びのテーブルを構築
+html_content = """
+<style>
+    .compact-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .compact-table td { padding: 5px; text-align: center; vertical-align: middle; }
+    .val-cell { font-weight: bold; font-size: 1.1em; }
+</style>
+<table class="compact-table">
+"""
+# ※注: ボタンのクリック処理は、後述のst.formで行います
