@@ -1,45 +1,29 @@
 import streamlit as st
 import pandas as pd
 
-# 1. データの読み込み（これがないと始まらない！）
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1-07lIKhhRNmT-TwmgDcVT5tkD4D8_zRCOO2XU9VzIRs/export?format=csv&gid=0"
+# (データ読み込み処理は省略せず、ここが起点となります)
+# ... (中略: load_data() 関数) ...
 
-@st.cache_data(ttl=2)
-def load_data():
-    try:
-        df = pd.read_csv(SHEET_URL)
-        df.columns = [c.strip() for c in df.columns]
-        return df
-    except:
-        return pd.DataFrame()
-
-df_sheets = load_data()
-
-# 2. データが空ならエラーを表示して終了
-if df_sheets.empty:
-    st.error("データの読み込みに失敗しました。")
-    st.stop()
-
-# 3. ユニット選択と調整エリア（常に表示！）
-id_col = df_sheets.columns[0]
-name_col = df_sheets.columns[1] if len(df_sheets.columns) > 1 else df_sheets.columns[0]
-unit_name_list = df_sheets[name_col].dropna().unique().tolist()
+# 1. ユニット選択と基本データ抽出
 selected_unit_name = st.selectbox("🔄 ユニット選択:", unit_name_list)
-
 unit_data = df_sheets[df_sheets[name_col] == selected_unit_name].iloc[0]
 
-# --- 調整エリア ---
-st.subheader(f"🛠️ {selected_unit_name}")
-# ここにステータス調整のUIを記述...
+# 2. パラメータ調整の復活（ここでHPやATKを操作）
+hp = st.number_input("HP", value=int(unit_data.get("HP", 100)))
+atk = st.number_input("ATK", value=int(unit_data.get("ATK", 70)))
+sp_max = st.number_input("最大SP", value=int(unit_data.get("最大SP", 100)))
+base_wt = st.number_input("基礎WT", value=int(unit_data.get("基礎WT", 500)))
 
-# ------------------------------------------
-# 4. 保存エリア（独立したエリアとして一番下に配置）
-# ------------------------------------------
+# 3. 総合スコア等の計算ロジック（ここが肝！）
+durability_score = (hp * 1.0) + (int(unit_data.get("DEF", 60)) * 2.5)
+offensive_score = (atk * 2.0) + (sp_max * 1.5)
+total_score = durability_score + offensive_score + (1000 - base_wt) * 1.5
+
+# 4. スコア表示（最上部固定エリア）
+col1, col2 = st.columns(2)
+col1.metric("✨ 総合スコア", f"{int(total_score)} 点")
+col2.metric("⚔️ 攻撃指数", f"{int(offensive_score)} 点")
+
+# 5. 保存セクション（最後に配置）
 st.markdown("---")
-st.header("💾 データの保存")
-
-if st.checkbox("上記の内容でスプレッドシートを上書き保存する"):
-    if st.button("✅ 確定して保存を実行", use_container_width=True):
-        st.success("🎉 保存完了！")
-else:
-    st.info("保存するには上のチェックボックスをONにしてください。")
+# ... (保存ロジック) ...
