@@ -2,14 +2,29 @@ import streamlit as st
 import pandas as pd
 
 # ==========================================
-# 🎮 『Chain Conflict』統合マネジメントシミュレータ V2.1 (UI最適化版)
+# 🎮 『Chain Conflict』統合マネジメントシミュレータ V2.4 (漆黒のダークモード版)
 # ==========================================
 
-st.set_page_config(layout="wide")
+# 🌟 1行目でページ設定をワイドにしつつ、外観を「ダークモード」に固定する設定を仕込みます！
+st.set_page_config(
+    layout="wide",
+    page_title="Chain Conflict シミュレータ",
+    initial_sidebar_state="collapsed"
+)
+
+# 🎨 無理やり背景を黒（#0E1117）に染め、文字を白にする魔法のカスタムCSS
+st.markdown("""
+    <style>
+    .stApp {
+        background-color: #0E1117;
+        color: #FAFAFA;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 SHEET_URL = "https://docs.google.com/spreadsheets/d/1-07lIKhhRNmT-TwmgDcVT5tkD4D8_zRCOO2XU9VzIRs/export?format=csv&gid=0"
 
-@st.cache_data(ttl=5)  # 反映を早くするためキャッシュを5秒に短縮
+@st.cache_data(ttl=2)
 def load_data():
     try:
         df = pd.read_csv(SHEET_URL)
@@ -22,43 +37,38 @@ def load_data():
 df_sheets = load_data()
 
 # ------------------------------------------
-# ⏳ 1. 【フローティング表示】サイドバー固定エリア
+# 🥇 1. 画面の最上部に「総合スコア」を常時大表示（黒背景に映えるデザイン）
 # ------------------------------------------
-with st.sidebar:
-    st.title("⚖️ リアルタイム評価")
-    st.write("数値を動かすと、即座にここのスコアが連動してヴィインと変わりますぞ！")
-    st.markdown("---")
-    score_container = st.container()
-    st.markdown("---")
-    st.caption("※下の[💾 変更を保存する]ボタンを押すと、マスターデータが更新されます。")
+st.title("⚔️ Chain Conflict 統合マネジメント")
+
+# スコアをリアルタイム更新するためのプレースホルダー
+top_score_box = st.empty()
+
+st.markdown("---")
 
 # ------------------------------------------
 # 📑 2. 画面中央：操作・編集・微調整エリア
 # ------------------------------------------
-st.title("⚔️ Chain Conflict 素体＆武器 統合マネジメントシステム")
-
 if not df_sheets.empty:
-    # 📝 列名の自動判定ロジック
-    # 「ユニット名」や「名前」という列があればそれを使い、なければ2列目を「名前」として扱います
+    # 📌 列名の超・執念検索ロジック
     name_col = ""
-    id_col = df_sheets.columns[0] # デフォルトは1列目をIDと仮定
-    
     for c in df_sheets.columns:
-        if "名" in c or "name" in c.lower() or "ユニット" in c:
+        if any(keyword in str(c).lower() for keyword in ["名", "unit", "name", "武器"]):
             name_col = c
             break
+            
     if not name_col:
-        # 見つからない場合は2列目を名前列とする
         name_col = df_sheets.columns[1] if len(df_sheets.columns) > 1 else df_sheets.columns[0]
+        
+    id_col = df_sheets.columns[0] # 1列目はIDと仮定
 
-    # 名前をキーにしてドロップダウンを作成
-    unit_name_list = df_sheets[name_col].dropna().tolist()
+    unit_name_list = df_sheets[name_col].dropna().unique().tolist()
     
     col_menu1, col_menu2 = st.columns([3, 1])
     with col_menu1:
         selected_unit_name = st.selectbox("🔄 調整するユニット（名前で選択）:", unit_name_list)
     with col_menu2:
-        st.write("") # スペース空け
+        st.write("") 
         st.write("")
         if st.button("➕ 新規ユニットを作成", use_container_width=True):
             st.toast("新規作成モード（数値をリセットしました）")
@@ -67,9 +77,7 @@ if not df_sheets.empty:
     unit_data = df_sheets[df_sheets[name_col] == selected_unit_name].iloc[0]
     current_id = unit_data.get(id_col, "N/A")
 
-    st.markdown("---")
-    # タイトル横にIDを小さくオシャレに表示！
-    st.subheader(f"🛠️ 【{selected_unit_name}】のステータス微調整  `(ID: {current_id})`")
+    st.subheader(f"🛠️ 【{selected_unit_name}】のステータス調整  `(ID: {current_id})`")
     
     col_param1, col_param2 = st.columns(2)
     
@@ -115,15 +123,13 @@ if not df_sheets.empty:
     speed_mobility_score = wt_score + allow_weight + (move_val * 50)
     total_score = durability_score + offensive_score + speed_mobility_score
 
-    # 【サイドバー】へリアルタイム反映
-    with score_container:
-        st.metric("🛡️ 耐久指数", f"{int(durability_score)} 点")
-        st.metric("⚔️ 攻撃・リソース指数", f"{int(offensive_score)} 点")
-        st.metric("🏃 速度・機動指数", f"{int(speed_mobility_score)} 点")
-        st.subheader(f"✨ 総合スコア: {int(total_score)} 点")
-        st.markdown("---")
-        st.metric("🔄 1行動あたりのSP自動回復", f"{sp_gain_per_action:.1f} SP")
-        st.caption(f"想定1500WT内での手数: 約 {estimated_turns:.1f} 回")
+    # 🌟最上部の特等席にスコアをリアルタイム出力
+    with top_score_box.container():
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("✨ 総合スコア", f"{int(total_score)} 点")
+        c2.metric("🛡️ 耐久指数", f"{int(durability_score)} 点")
+        c3.metric("⚔️ 攻撃指数", f"{int(offensive_score)} 点")
+        c4.metric("🔄 1行動のSP回復", f"{sp_gain_per_action:.1f} SP")
 
     # ------------------------------------------
     # 💾 4. 保存 ＆ SQL出力エリア
