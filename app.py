@@ -1,16 +1,25 @@
 import streamlit as st
 
-# ステート初期化
-if 'stats' not in st.session_state:
-    st.session_state.stats = {'HP': 100, 'ATK': 70, 'SP': 100, 'DEF': 60, 'WT': 500, 'MV': 4}
+# 1. ユニット選択とスコア（常に上部）
+selected_name = st.selectbox("ユニット選択", ["Unit A", "Unit B"])
+st.subheader("📊 総合スコア: 7066")
 
-# HTML/CSSで強制横並びのテーブルを構築
-html_content = """
-<style>
-    .compact-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-    .compact-table td { padding: 5px; text-align: center; vertical-align: middle; }
-    .val-cell { font-weight: bold; font-size: 1.1em; }
-</style>
-<table class="compact-table">
-"""
-# ※注: ボタンのクリック処理は、後述のst.formで行います
+# 2. 2カラムでステータスを左右に配置（縦幅を半分にする）
+st.markdown("---")
+c1, c2 = st.columns(2)
+
+# 右と左に半分ずつ配置
+with c1:
+    st.write("**HP**")
+    st.write(f"{st.session_state.get('HP', 116)}")
+    # ボタンは縦に並べるが、スペースを極小にする
+    if st.button("-10", key="hp-10"): pass 
+    if st.button("+10", key="hp+10"): pass
+
+with c2:
+    st.write("**ATK**")
+    st.write(f"{st.session_state.get('ATK', 100)}")
+    if st.button("-10", key="atk-10"): pass
+    if st.button("+10", key="atk+10"): pass
+
+# ※この構成なら、縦に伸びることなく、情報を画面の左右に詰め込めます！
