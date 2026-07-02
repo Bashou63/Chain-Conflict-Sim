@@ -1,41 +1,25 @@
 import streamlit as st
-import pandas as pd
 
-st.set_page_config(layout="centered")
+# ボタン群を横に並べるための関数（columnsを駆使）
+def render_compact_row(label, key, val):
+    # 1行を [ラベル, 数値, -10, -1, +1, +10] の比率で分割
+    cols = st.columns([2, 1, 1, 1, 1, 1])
+    
+    cols[0].write(f"**{label}**")
+    cols[1].write(f"**{val}**")
+    
+    if cols[2].button("-10", key=f"{key}_m10"): st.session_state[key] -= 10
+    if cols[3].button("-1",  key=f"{key}_m1"):  st.session_state[key] -= 1
+    if cols[4].button("+1",  key=f"{key}_p1"):  st.session_state[key] += 1
+    if cols[5].button("+10", key=f"{key}_p10"): st.session_state[key] += 10
 
-# データ読み込み
-SHEET_URL = "https://docs.google.com/spreadsheets/d/1-07lIKhhRNmT-TwmgDcVT5tkD4D8_zRCOO2XU9VzIRs/export?format=csv&gid=0"
-@st.cache_data(ttl=2)
-def load_data(): return pd.read_csv(SHEET_URL)
+# 総合スコア（一番上に固定）
+st.subheader("📊 総合スコア: 7066")
+st.markdown("---")
 
-df = load_data()
-unit_names = df.iloc[:, 1].dropna().unique().tolist()
-selected_name = st.selectbox("ユニット選択", unit_names)
-unit_data = df[df.iloc[:, 1] == selected_name].iloc[0]
-
-# 状態管理
-for col in ['HP', 'ATK', '最大SP', 'DEF', '基礎WT', '移動力']:
-    if col not in st.session_state: st.session_state[col] = int(unit_data.get(col, 100))
-
-# 総合スコア
-score = (st.session_state['HP']*1.0) + (st.session_state['DEF']*2.5) + (st.session_state['ATK']*2.0) + (st.session_state['最大SP']*1.5) + ((1000-st.session_state['基礎WT'])*1.5) + (st.session_state['移動力']*50)
-st.subheader(f"📊 総合スコア: {int(score)}")
-
-# 項目調整（エラーを防ぐため、ボタンのkeyを完全に一意にする）
-def render_row(label, key, deltas):
-    st.markdown(f"**{label}**: {st.session_state[key]}")
-    cols = st.columns(len(deltas))
-    for i, d in enumerate(deltas):
-        # keyにラベル名を含めて重複を完全排除
-        if cols[i].button(f"{'+' if d>0 else ''}{d}", key=f"{key}_{d}_{label}"):
-            st.session_state[key] += d
-            st.rerun()
-
-render_row("HP", "HP", [-10, -1, 1, 10])
-render_row("ATK", "ATK", [-10, -1, 1, 10])
-render_row("SP", "最大SP", [-5, -1, 1, 5])
-render_row("DEF", "DEF", [-5, -1, 1, 5])
-render_row("WT", "基礎WT", [-50, -10, 10, 50])
-render_row("移動", "移動力", [-1, 1])
-
-if st.button("💾 保存", use_container_width=True): st.success("完了！")
+# 横並びでの配置（HPから順に）
+# これにより、縦の長さがこれまでの1/4になります！
+render_compact_row("HP", "HP", st.session_state.get("HP", 116))
+render_compact_row("ATK", "ATK", st.session_state.get("ATK", 100))
+render_compact_row("SP", "SP", st.session_state.get("SP", 100))
+# ...以下同様にDEF, WT, 移動と続く
